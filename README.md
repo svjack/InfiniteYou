@@ -37,7 +37,7 @@ ByteDance Intelligent Creation
 
 - To better fit specific personal needs, we find that two arguments are highly useful to adjust: <br />`--infusenet_conditioning_scale` (default: `1.0`) and `--infusenet_guidance_start` (default: `0.0`). Usually, you may NOT need to adjust them. If necessary, start by trying a slightly larger <br />`--infusenet_guidance_start` (*e.g.*, `0.1`) only (especially helpful for `sim_stage1`). If still not satisfactory, then try a slightly smaller `--infusenet_conditioning_scale` (*e.g.*, `0.9`).
 
-- We also provided two LoRAs ([Realism](https://civitai.com/models/631986?modelVersionId=706528) and [Anti-blur](https://civitai.com/models/675581/anti-blur-flux-lora)) to enable additional usage flexibility. They are *entirely optional*, which are examples to facilitate users to try but are NOT used in our paper.
+- We also provided two LoRAs ([Realism](https://civitai.com/models/631986?modelVersionId=706528) and [Anti-blur](https://civitai.com/models/675581/anti-blur-flux-lora)) to enable additional usage flexibility. If needed, try `Realism` only first.  They are *entirely optional*, which are examples to try but are NOT used in our paper.
 
 - If the generated gender does not align with your preferences, try adding specific words in the text prompt, such as 'a man', 'a woman', *etc*. We encourage users to use inclusive and respectful language.
 
@@ -60,7 +60,7 @@ Simply run this one-line command to install (feel free to create a `python3` vir
 pip install -r requirements.txt
 ```
 
-### Memory Requirements
+### Memory Requirements 
 
 Please note that the current full-performance `bf16` model inference requires a **peak VRAM** of around **43GB**. **We are trying to reduce memory usage and will post an update soon.** Community contributions are welcome.
 
