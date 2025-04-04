@@ -23,7 +23,7 @@ from pipelines.pipeline_infu_flux import InfUFluxPipeline
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--id_image', default='./assets/examples/yann-lecun_resize.jpg', help="""input ID image""")
+    parser.add_argument('--id_image', default='./assets/examples/man.jpg', help="""input ID image""")
     parser.add_argument('--control_image', default=None, help="""control image [optional]""")
     parser.add_argument('--out_results_dir', default='./results', help="""output folder""")
     parser.add_argument('--prompt', default='A man, portrait, cinematic')

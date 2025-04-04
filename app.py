@@ -137,7 +137,7 @@ def generate_image(
         gr.Error(f"An error occurred: {e}")
         return gr.update()
 
-    return gr.update(value = image, label=f"Generated image, seed = {seed}")
+    return gr.update(value = image, label=f"Generated Image, seed = {seed}")
 
 
 def generate_examples(id_image, control_image, prompt_text, seed, enable_realism, enable_anti_blur, model_version):
@@ -145,31 +145,33 @@ def generate_examples(id_image, control_image, prompt_text, seed, enable_realism
 
 
 sample_list = [
-    ['./assets/examples/yann-lecun_resize.jpg', None, 'A sophisticated gentleman exuding confidence. He is dressed in a 1990s brown plaid jacket with a high collar, paired with a dark grey turtleneck. His trousers are tailored and charcoal in color, complemented by a sleek leather belt. The background showcases an elegant library with bookshelves, a marble fireplace, and warm lighting, creating a refined and cozy atmosphere. His relaxed posture and casual hand-in-pocket stance add to his composed and stylish demeanor', 666, False, False, 'aes_stage2'],
-    ['./assets/examples/yann-lecun_resize.jpg', './assets/examples/man_pose.jpg', 'A man, portrait, cinematic', 42, True, False, 'aes_stage2'],
-    ['./assets/examples/yann-lecun_resize.jpg', './assets/examples/yann-lecun_resize.jpg', 'A man, portrait, cinematic', 12345, False, False, 'sim_stage1'],
-    ['./assets/examples/yangmi.jpg', None, 'A woman, portrait, cinematic', 1621695706, False, False, 'sim_stage1'],
-    ['./assets/examples/yangmi.jpg', None, 'A young woman holding a sign with the text "InfiniteYou", "Infinite" in black and "You" in red, pure background', 3724009366, False, False, 'aes_stage2'],
-    ['./assets/examples/yangmi.jpg', None, 'A photo of an elegant Javanese bride in traditional attire, with long hair styled into intricate a braid made of many fresh flowers, wearing a delicate headdress made from sequins and beads. She\'s holding flowers, light smiling at the camera, against a backdrop adorned with orchid blooms. The scene captures her grace as she stands amidst soft pastel colors, adding to its dreamy atmosphere', 42, True, False, 'aes_stage2'],
-    ['./assets/examples/yangmi.jpg', None, 'A photo of an elegant Javanese bride in traditional attire, with long hair styled into intricate a braid made of many fresh flowers, wearing a delicate headdress made from sequins and beads. She\'s holding flowers, light smiling at the camera, against a backdrop adorned with orchid blooms. The scene captures her grace as she stands amidst soft pastel colors, adding to its dreamy atmosphere', 42, False, False, 'sim_stage1'],
+    ['./assets/examples/man.jpg', None, 'A sophisticated gentleman exuding confidence. He is dressed in a 1990s brown plaid jacket with a high collar, paired with a dark grey turtleneck. His trousers are tailored and charcoal in color, complemented by a sleek leather belt. The background showcases an elegant library with bookshelves, a marble fireplace, and warm lighting, creating a refined and cozy atmosphere. His relaxed posture and casual hand-in-pocket stance add to his composed and stylish demeanor', 666, False, False, 'aes_stage2'],
+    ['./assets/examples/man.jpg', './assets/examples/man_pose.jpg', 'A man, portrait, cinematic', 42, True, False, 'aes_stage2'],
+    ['./assets/examples/man.jpg', None, 'A man, portrait, cinematic', 12345, False, False, 'sim_stage1'],
+    ['./assets/examples/woman.jpg', './assets/examples/woman.jpg', 'A woman, portrait, cinematic', 1621695706, False, False, 'sim_stage1'],
+    ['./assets/examples/woman.jpg', None, 'A young woman holding a sign with the text "InfiniteYou", "Infinite" in black and "You" in red, pure background', 3724009365, False, False, 'aes_stage2'],
+    ['./assets/examples/woman.jpg', None, 'A photo of an elegant Javanese bride in traditional attire, with long hair styled into intricate a braid made of many fresh flowers, wearing a delicate headdress made from sequins and beads. She\'s holding flowers, light smiling at the camera, against a backdrop adorned with orchid blooms. The scene captures her grace as she stands amidst soft pastel colors, adding to its dreamy atmosphere', 42, True, False, 'aes_stage2'],
+    ['./assets/examples/woman.jpg', None, 'A photo of an elegant Javanese bride in traditional attire, with long hair styled into intricate a braid made of many fresh flowers, wearing a delicate headdress made from sequins and beads. She\'s holding flowers, light smiling at the camera, against a backdrop adorned with orchid blooms. The scene captures her grace as she stands amidst soft pastel colors, adding to its dreamy atmosphere', 42, False, False, 'sim_stage1'],
 ]
 
 with gr.Blocks() as demo:
     session_state = gr.State({})
     default_model_version = "v1.0"
 
-    gr.Markdown("""
+    gr.HTML("""
     <div style="text-align: center; max-width: 900px; margin: 0 auto;">
         <h1 style="font-size: 1.5rem; font-weight: 700; display: block;">InfiniteYou-FLUX</h1>
-        <h2 style="font-size: 1.2rem; font-weight: 300; margin-bottom: 1rem; display: block;">Official Gradio Demo for <a href="https://arxiv.org/abs/2503.xxxxx">InfiniteYou: Flexible Photo Recrafting While Preserving Your Identity</a></h2>
+        <h2 style="font-size: 1.2rem; font-weight: 300; margin-bottom: 1rem; display: block;">Official Gradio Demo for <a href="https://arxiv.org/abs/2503.16418">InfiniteYou: Flexible Photo Recrafting While Preserving Your Identity</a></h2>
         <a href="https://bytedance.github.io/InfiniteYou">[Project Page]</a>&ensp;
-        <a href="https://arxiv.org/abs/2503.xxxxx">[Paper]</a>&ensp;
+        <a href="https://arxiv.org/abs/2503.16418">[Paper]</a>&ensp;
         <a href="https://github.com/bytedance/InfiniteYou">[Code]</a>&ensp;
         <a href="https://huggingface.co/ByteDance/InfiniteYou">[Model]</a>
     </div>
+    """)
 
+    gr.Markdown("""
     ### 💡 How to Use This Demo:
-    1. **Upload an identity (ID) image containing a human face.** For images with multiple faces, only the largest face will be detected. The face should ideally be clear and large enough, without significant occlusions or blur.
+    1. **Upload an identity (ID) image containing a human face.** For multiple faces, only the largest face will be detected. The face should ideally be clear and large enough, without significant occlusions or blur.
     2. **Enter the text prompt to describe the generated image and select the model version.** Please refer to **important usage tips** under the Generated Image field.
     3. *[Optional] Upload a control image containing a human face.* Only five facial keypoints will be extracted to control the generation. If not provided, we use a black control image, indicating no control.
     4. *[Optional] Adjust advanced hyperparameters or apply optional LoRAs to meet personal needs.* Please refer to **important usage tips** under the Generated Image field.
@@ -215,10 +217,10 @@ with gr.Blocks() as demo:
             gr.Markdown(
                 """
                 ### ❗️ Important Usage Tips:
-                - **Model Version**: `aes_stage2` is used by default for better text-image alignment and aesthetics. For higher ID similarity, please try `sim_stage1`.
+                - **Model Version**: `aes_stage2` is used by default for better text-image alignment and aesthetics. For higher ID similarity, try `sim_stage1`.
                 - **Useful Hyperparameters**: Usually, there is NO need to adjust too much. If necessary, try a slightly larger `--infusenet_guidance_start` (*e.g.*, `0.1`) only (especially helpful for `sim_stage1`). If still not satisfactory, then try a slightly smaller `--infusenet_conditioning_scale` (*e.g.*, `0.9`).
-                - **Optional LoRAs**: `realism` and `anti-blur`. To enable them, please check the corresponding boxes. They are optional and were NOT used in our paper.
-                - **Gender Prompt**: If the generated gender is not preferred, add specific words in the text prompt, such as 'a man', 'a woman', *etc*. We encourage using inclusive and respectful language.
+                - **Optional LoRAs**: `realism` and `anti-blur`. To enable them, please check the corresponding boxes. If needed, try `realism` only first. They are optional and were NOT used in our paper.
+                - **Gender Prompt**: If the generated gender is not preferred, add specific words in the prompt, such as 'a man', 'a woman', *etc*. We encourage using inclusive and respectful language.
                 """
             )
 
@@ -261,12 +263,20 @@ with gr.Blocks() as demo:
         """
         ---
         ### 📜 Disclaimer and Licenses 
-        Some images in this demo are from public domains or generated by models. These pictures are intended solely to show the capabilities of our research. If you have any concerns, please contact us, and we will promptly remove any inappropriate content.
+        The images used in this demo are sourced from consented subjects or generated by the models. These pictures are intended solely to show the capabilities of our research. If you have any concerns, please contact us, and we will promptly remove any inappropriate content.
         
-        The use of the released code, model, and demo must strictly adhere to the respective licenses. Our code is released under the Apache 2.0 License, and our model is released under the Creative Commons Attribution-NonCommercial 4.0 International Public License for academic research purposes only. Any manual or automatic downloading of the face models from [InsightFace](https://github.com/deepinsight/insightface), the [FLUX.1-dev](https://huggingface.co/black-forest-labs/FLUX.1-dev) base model, LoRAs, etc., must follow their original licenses and be used only for academic research purposes.
+        The use of the released code, model, and demo must strictly adhere to the respective licenses. 
+        Our code is released under the [Apache 2.0 License](https://github.com/bytedance/InfiniteYou/blob/main/LICENSE), 
+        and our model is released under the [Creative Commons Attribution-NonCommercial 4.0 International Public License](https://huggingface.co/ByteDance/InfiniteYou/blob/main/LICENSE) 
+        for academic research purposes only. Any manual or automatic downloading of the face models from [InsightFace](https://github.com/deepinsight/insightface), 
+        the [FLUX.1-dev](https://huggingface.co/black-forest-labs/FLUX.1-dev) base model, LoRAs, *etc.*, must follow their original licenses and be used only for academic research purposes.
 
-        This research aims to positively impact the Generative AI field. Users are granted freedom to create images using this tool, but they must comply with local laws and use it responsibly. The developers do not assume any responsibility for potential misuse.
-        
+        This research aims to positively impact the field of Generative AI. Any usage of this method must be responsible and comply with local laws. The developers do not assume any responsibility for any potential misuse.
+        """
+    )    
+
+    gr.Markdown(
+        """
         ### 📖 Citation
 
         If you find InfiniteYou useful for your research or applications, please cite our paper:
@@ -276,7 +286,7 @@ with gr.Blocks() as demo:
           title={{InfiniteYou}: Flexible Photo Recrafting While Preserving Your Identity},
           author={Jiang, Liming and Yan, Qing and Jia, Yumin and Liu, Zichuan and Kang, Hao and Lu, Xin},
           journal={arXiv preprint},
-          volume={arXiv:2503.xxxxx},
+          volume={arXiv:2503.16418},
           year={2025}
         }
         ```
