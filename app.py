@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import gc
+
 import gradio as gr
 import pillow_avif
 import torch
@@ -33,11 +35,11 @@ class ModelVersion:
 ENABLE_ANTI_BLUR_DEFAULT = False
 ENABLE_REALISM_DEFAULT = False
 
-pipeline = None
 loaded_pipeline_config = {
     "model_version": "aes_stage2",
     "enable_realism": False,
     "enable_anti_blur": False,
+    'pipeline': None
 }
 
 
@@ -57,25 +59,28 @@ def download_models():
 
 
 def prepare_pipeline(model_version, enable_realism, enable_anti_blur):
-    global pipeline
-
     if (
-        pipeline 
+        loaded_pipeline_config['pipeline'] is not None
         and loaded_pipeline_config["enable_realism"] == enable_realism 
         and loaded_pipeline_config["enable_anti_blur"] == enable_anti_blur
         and model_version == loaded_pipeline_config["model_version"]
     ):
-        return
+        return loaded_pipeline_config['pipeline']
     
     loaded_pipeline_config["enable_realism"] = enable_realism
     loaded_pipeline_config["enable_anti_blur"] = enable_anti_blur
     loaded_pipeline_config["model_version"] = model_version
 
+    pipeline = loaded_pipeline_config['pipeline']
     if pipeline is None or pipeline.model_version != model_version:
+        print(f'Switching model to {model_version}')
         del pipeline
+        del loaded_pipeline_config['pipeline']
+        gc.collect()
+        torch.cuda.empty_cache()
 
         model_path = f'./models/InfiniteYou/infu_flux_v1.0/{model_version}'
-        print(f'loading model from {model_path}')
+        print(f'Loading model from {model_path}')
 
         pipeline = InfUFluxPipeline(
             base_model_path='./models/FLUX.1-dev',
@@ -86,6 +91,8 @@ def prepare_pipeline(model_version, enable_realism, enable_anti_blur):
             model_version=model_version,
         )
 
+        loaded_pipeline_config['pipeline'] = pipeline
+
     pipeline.pipe.delete_adapters(['realism', 'anti_blur'])
     loras = []
     if enable_realism:
@@ -93,6 +100,8 @@ def prepare_pipeline(model_version, enable_realism, enable_anti_blur):
     if enable_anti_blur:
         loras.append(['./models/InfiniteYou/supports/optional_loras/flux_anti_blur_lora.safetensors', 'anti_blur', 1.0])
     pipeline.load_loras(loras)
+
+    return pipeline
 
 
 def generate_image(
@@ -111,9 +120,7 @@ def generate_image(
     enable_anti_blur,
     model_version
 ):
-    global pipeline
-
-    prepare_pipeline(model_version=model_version, enable_realism=enable_realism, enable_anti_blur=enable_anti_blur)
+    pipeline = prepare_pipeline(model_version=model_version, enable_realism=enable_realism, enable_anti_blur=enable_anti_blur)
 
     if seed == 0:
         seed = torch.seed() & 0xFFFFFFFF

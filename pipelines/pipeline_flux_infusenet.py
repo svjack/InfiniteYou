@@ -147,6 +147,9 @@ class FluxInfuseNetPipeline(FluxControlNetPipeline):
         negative_prompt_2: Optional[Union[str, List[str]]] = None,
         negative_prompt_embeds: Optional[torch.FloatTensor] = None,
         negative_pooled_prompt_embeds: Optional[torch.FloatTensor] = None,
+
+        # Memory reduction parameters
+        cpu_offload: bool = False,
     ):
         r"""
         Function invoked when calling the pipeline for generation.
@@ -252,6 +255,8 @@ class FluxInfuseNetPipeline(FluxControlNetPipeline):
                 Pre-generated negative pooled text embeddings. Can be used to easily tweak text inputs, *e.g.* prompt
                 weighting. If not provided, negative pooled text embeddings will be generated from
                 `negative_prompt` input argument.
+            cpu_offload (`bool`, *optional*, defaults to `False`):
+                Whether to offload the models to CPU to save memory.
 
         Examples:
 
@@ -301,8 +306,19 @@ class FluxInfuseNetPipeline(FluxControlNetPipeline):
         else:
             batch_size = prompt_embeds.shape[0]
 
-        device = self._execution_device
+        device = self._execution_device if not cpu_offload else 'cuda'
         dtype = self.transformer.dtype
+
+        if cpu_offload:
+            # Move VAE, Transformer, InfuseNet to CPU
+            self.vae.cpu()
+            self.transformer.cpu()
+            self.controlnet.cpu()
+            torch.cuda.empty_cache()
+
+            # Move CLIP and T5 to GPU
+            self.text_encoder.to(device)
+            self.text_encoder_2.to(device)
 
         lora_scale = (
             self.joint_attention_kwargs.get("scale", None) if self.joint_attention_kwargs is not None else None
@@ -353,6 +369,16 @@ class FluxInfuseNetPipeline(FluxControlNetPipeline):
             max_sequence_length=max_sequence_length,
             lora_scale=lora_scale,
         )
+
+        if cpu_offload:
+            # Move CLIP and T5 to CPU
+            self.text_encoder.cpu()
+            self.text_encoder_2.cpu()
+            torch.cuda.empty_cache()
+
+            # Move VAE, InfuseNet to GPU
+            self.vae.to(device)
+            self.controlnet.to(device)
 
         # 3. Prepare control image
         num_channels_latents = self.transformer.config.in_channels // 4
@@ -486,6 +512,14 @@ class FluxInfuseNetPipeline(FluxControlNetPipeline):
                 for s, e in zip(control_guidance_start, control_guidance_end)
             ]
             controlnet_keep.append(keeps[0] if isinstance(self.controlnet, FluxControlNetModel) else keeps)
+        
+        if cpu_offload:
+            # Move VAE to CPU
+            self.vae.cpu()
+            torch.cuda.empty_cache()
+
+            # Move Transformer to GPU
+            self.transformer.to(device)
 
         # 7. Denoising loop
         with self.progress_bar(total=num_inference_steps) as progress_bar:
@@ -591,6 +625,14 @@ class FluxInfuseNetPipeline(FluxControlNetPipeline):
 
                 if XLA_AVAILABLE:
                     xm.mark_step()
+        
+        if cpu_offload:
+            # Move InfuseNet to CPU
+            self.controlnet.cpu()
+            torch.cuda.empty_cache()
+            
+            # Move VAE to GPU
+            self.vae.to(device)
 
         if output_type == "latent":
             image = latents

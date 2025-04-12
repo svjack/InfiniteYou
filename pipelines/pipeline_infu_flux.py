@@ -20,12 +20,14 @@ from typing import Optional
 import cv2
 import numpy as np
 import torch
-from diffusers.models import FluxControlNetModel
+from diffusers import FluxControlNetModel, FluxTransformer2DModel
 from facexlib.recognition import init_recognition_model
 from huggingface_hub import snapshot_download
 from insightface.app import FaceAnalysis
 from insightface.utils import face_align
 from PIL import Image
+from optimum.quanto import freeze, qint8, quantize
+from transformers import T5EncoderModel
 
 from .pipeline_flux_infusenet import FluxInfuseNetPipeline
 from .resampler import Resampler
@@ -130,6 +132,8 @@ class InfUFluxPipeline:
             image_proj_num_tokens=8,
             infu_flux_version='v1.0',
             model_version='aes_stage2',
+            quantize_8bit=False,
+            cpu_offload=False,
         ):
 
         self.infu_flux_version = infu_flux_version
@@ -146,28 +150,34 @@ class InfUFluxPipeline:
             infusenet_path = os.path.join(infu_model_path, 'InfuseNetModel')
             self.infusenet = FluxControlNetModel.from_pretrained(infusenet_path, torch_dtype=torch.bfloat16)
             insightface_root_path = './models/InfiniteYou/supports/insightface'
+        if quantize_8bit:
+            quantize(self.infusenet, weights=qint8)
+            freeze(self.infusenet)
         try:
+            transformer = FluxTransformer2DModel.from_pretrained(base_model_path, subfolder="transformer", torch_dtype=torch.bfloat16)
+            text_encoder_2 = T5EncoderModel.from_pretrained(base_model_path, subfolder="text_encoder_2", torch_dtype=torch.bfloat16)
+            if quantize_8bit:
+                quantize(transformer, weights=qint8)
+                freeze(transformer)
+                quantize(text_encoder_2, weights=qint8)
+                freeze(text_encoder_2)
             pipe = FluxInfuseNetPipeline.from_pretrained(
                 base_model_path,
+                transformer=transformer,
+                text_encoder_2=text_encoder_2,
                 controlnet=self.infusenet,
                 torch_dtype=torch.bfloat16,
             )
-        except:
-            try:
-                pipe = FluxInfuseNetPipeline.from_single_file(
-                    base_model_path,
-                    controlnet=self.infusenet,
-                    torch_dtype=torch.bfloat16,
-                )
-            except Exception as e:
-                print(e)
-                print('\nIf you are using `black-forest-labs/FLUX.1-dev` and have not downloaded it into a local directory, '
-                      'please accept the agreement and obtain access at https://huggingface.co/black-forest-labs/FLUX.1-dev. '
-                      'Then, use `huggingface-cli login` and your access tokens at https://huggingface.co/settings/tokens to authenticate. '
-                      'After that, run the code again. If you have downloaded it, please use `base_model_path` to specify the correct path.')
-                print('\nIf you are using other models, please download them to a local directory and use `base_model_path` to specify the correct path.')
-                exit()
-        pipe.to('cuda', torch.bfloat16)
+        except Exception as e:
+            print(e)
+            print('\nIf you are using `black-forest-labs/FLUX.1-dev` and have not downloaded it into a local directory, '
+                    'please accept the agreement and obtain access at https://huggingface.co/black-forest-labs/FLUX.1-dev. '
+                    'Then, use `huggingface-cli login` and your access tokens at https://huggingface.co/settings/tokens to authenticate. '
+                    'After that, run the code again. If you have downloaded it, please use `base_model_path` to specify the correct path.')
+            print('\nIf you are using other models, please download them to a local directory and use `base_model_path` to specify the correct path.')
+            exit()
+        if not cpu_offload:
+            pipe.to('cuda')
         self.pipe = pipe
 
         # Load image proj model
@@ -211,7 +221,7 @@ class InfUFluxPipeline:
         names, scales = [],[]
         for lora_path, lora_name, lora_scale in loras:
             if lora_path != "":
-                print(f"loading lora {lora_path}")
+                print(f"Loading lora {lora_path}")
                 self.pipe.load_lora_weights(lora_path, adapter_name = lora_name)
                 names.append(lora_name)
                 scales.append(lora_scale)
@@ -244,6 +254,7 @@ class InfUFluxPipeline:
         infusenet_conditioning_scale = 1.0,
         infusenet_guidance_start = 0.0,
         infusenet_guidance_end = 1.0,
+        cpu_offload = False,
     ):        
         # Extract ID embeddings
         print('Preparing ID embeddings')
@@ -254,16 +265,22 @@ class InfUFluxPipeline:
         
         face_info = sorted(face_info, key=lambda x:(x['bbox'][2]-x['bbox'][0])*(x['bbox'][3]-x['bbox'][1]))[-1] # only use the maximum face
         landmark = face_info['kps']
+        self.arcface_model.to('cuda')
         id_embed = extract_arcface_bgr_embedding(id_image_cv2, landmark, self.arcface_model)
+        self.arcface_model.cpu()
+        torch.cuda.empty_cache()
         id_embed = id_embed.clone().unsqueeze(0).float().cuda()
         id_embed = id_embed.reshape([1, -1, 512])
         id_embed = id_embed.to(device='cuda', dtype=torch.bfloat16)
+        self.image_proj_model.to('cuda', torch.bfloat16)
         with torch.no_grad():
             id_embed = self.image_proj_model(id_embed)
             bs_embed, seq_len, _ = id_embed.shape
             id_embed = id_embed.repeat(1, 1, 1)
             id_embed = id_embed.view(bs_embed * 1, seq_len, -1)
             id_embed = id_embed.to(device='cuda', dtype=torch.bfloat16)
+        self.image_proj_model.cpu()
+        torch.cuda.empty_cache()
         
         # Load control image
         print('Preparing the control image')
@@ -294,6 +311,7 @@ class InfUFluxPipeline:
             control_guidance_end=infusenet_guidance_end,
             height=height,
             width=width,
+            cpu_offload=cpu_offload,
         ).images[0]
 
         return image

@@ -41,6 +41,9 @@ def main():
     # The LoRA options below are entirely optional. Here we provide two examples to facilitate users to try, but they are NOT used in our paper.
     parser.add_argument('--enable_realism_lora', action='store_true')
     parser.add_argument('--enable_anti_blur_lora', action='store_true')
+    # Memory reduction options
+    parser.add_argument('--quantize_8bit', action='store_true')
+    parser.add_argument('--cpu_offload', action='store_true')
     args = parser.parse_args()
 
     # Check arguments
@@ -59,6 +62,8 @@ def main():
         insightface_root_path=insightface_root_path,
         infu_flux_version=args.infu_flux_version,
         model_version=args.model_version,
+        quantize_8bit=args.quantize_8bit,
+        cpu_offload=args.cpu_offload,
     )
     # Load LoRAs (optional)
     lora_dir = os.path.join(args.model_dir, 'supports', 'optional_loras')
@@ -83,6 +88,7 @@ def main():
         infusenet_conditioning_scale=args.infusenet_conditioning_scale,
         infusenet_guidance_start=args.infusenet_guidance_start,
         infusenet_guidance_end=args.infusenet_guidance_end,
+        cpu_offload=args.cpu_offload,
     )
     
     # Save results
