@@ -1,5 +1,5 @@
 '''
-python test_poster_dataset.py --base_model_path "svjack/PosterCraft-v1_RL" --id_image "王力宏.webp" --out_results_dir ./InfiniteYou_Wang_Leehom_PosterCraft_Captioned --quantize_8bit
+python test_poster_dataset.py --base_model_path "svjack/PosterCraft-v1_RL" --id_image "王力宏.webp" --out_results_dir ./InfiniteYou_Wang_Leehom_PosterCraft_Captioned_FP8 --quantize_8bit
 '''
 
 import argparse
