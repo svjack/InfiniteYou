@@ -2,6 +2,10 @@
 python test_dataset.py --id_image "王力宏.webp" --out_results_dir ./InfiniteYou_Chinese_idol_Wang_Leehom_Captioned --quantize_8bit
 
 python test_poster_dataset.py --base_model_path "svjack/PosterCraft-v1_RL" --id_image "王力宏.webp" --out_results_dir ./InfiniteYou_Wang_Leehom_PosterCraft_Captioned_FP8 --quantize_8bit
+
+python test_poster_dataset_by.py --base_model_path "svjack/PosterCraft-v1_RL" --id_image "陈旭阳（真人）.jpg" --out_results_dir ./Dont_be_your_lover_Black_MV_Images --quantize_8bit
+
+python test_poster_dataset_by.py --base_model_path "svjack/PosterCraft-v1_RL" --id_image "苏锐（真人）.jpg" --out_results_dir ./Dont_be_your_lover_Yellow_MV_Images --quantize_8bit
 ```
 
 <div align="center">
