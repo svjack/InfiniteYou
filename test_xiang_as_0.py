@@ -1,3 +1,42 @@
+'''
+https://civitai.com/models/693319?modelVersionId=796769
+
+import torch
+from diffusers import FluxPipeline
+
+pipe = FluxPipeline.from_pretrained("black-forest-labs/FLUX.1-dev", torch_dtype=torch.bfloat16)
+pipe.load_lora_weights("Chinese_idol_Flex2_lora/my_first_flex2_lora_v1_000004500.safetensors", 
+                      adapter_name = "young"
+                      ) 
+#pipe.load_lora_weights("xblowjob-3.0-000075.safetensors")
+pipe.load_lora_weights("Twinks_Legs_Up_V7.safetensors",
+                      adapter_name = "leg"
+                      )
+#pipe.enable_sequential_cpu_offload()
+
+pipe.set_adapters(["young", "leg"], adapter_weights=[2, 1])
+
+pipe.enable_model_cpu_offload()
+
+prompt = '''
+A young Asian male singer with fair skin, pink nipples, cute boy, legs up showing his ass hole, 
+'''
+
+prompt = '''
+A young Asian male singer with fair skin, cute boy, legs up showing his ass hole show his pink nipples
+'''
+
+image = pipe(prompt,
+             num_inference_steps=50,
+             guidance_scale=3.5,
+            ).images[0]
+
+
+python test_xiang_as_0.py --prompt "A young Asian male singer with fair skin, pink nipples, cute boy, legs up showing his ass hole, " \
+ --id_image "xiang_rmbg.png" --out_results_dir Xiang_InfiniteYou_bottom_NSFW --quantize_8bit --num_steps 25
+
+'''
+
 # Copyright (c) 2025 Bytedance Ltd. and/or its affiliates. All rights reserved.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
