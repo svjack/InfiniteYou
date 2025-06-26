@@ -18,13 +18,10 @@ pipe.set_adapters(["young", "leg"], adapter_weights=[2, 1])
 
 pipe.enable_model_cpu_offload()
 
-prompt = '''
-A young Asian male singer with fair skin, pink nipples, cute boy, legs up showing his ass hole, 
-'''
+prompt = "A young Asian male singer with fair skin, pink nipples, cute boy, legs up showing his ass hole, "
 
-prompt = '''
-A young Asian male singer with fair skin, cute boy, legs up showing his ass hole show his pink nipples
-'''
+
+prompt = "A young Asian male singer with fair skin, cute boy, legs up showing his ass hole show his pink nipples"
 
 image = pipe(prompt,
              num_inference_steps=50,
